@@ -31,7 +31,7 @@ jobs:
           cp logo.svg deno/lib
           cp README.md deno/lib
 
-        name: Publish to NPM
+      - name: Publish to NPM
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
