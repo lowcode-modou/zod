@@ -1,6 +1,6 @@
 {
-  "name": "zod",
-  "version": "3.19.1",
+  "name": "@modou/zod",
+  "version": "0.0.1",
   "description": "TypeScript-first schema declaration and validation library with static type inference",
   "main": "./lib/index.js",
   "types": "./index.d.ts",
@@ -21,16 +21,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/colinhacks/zod"
+    "url": "https://github.com/lowcode-modou/zod"
   },
-  "author": "Colin McDonnell <colin@colinhacks.com>",
+  "author": "ll929 <liuleiytu@gmail.com>",
   "license": "MIT",
   "sideEffects": false,
   "bugs": {
-    "url": "https://github.com/colinhacks/zod/issues"
+    "url": "https://github.com/lowcode-modou/zod/issues"
   },
-  "homepage": "https://github.com/colinhacks/zod",
-  "funding": "https://github.com/sponsors/colinhacks",
+  "homepage": "https://github.com/lowcode-modou/zod",
   "support": {
     "backing": {
       "npm-funding": true
