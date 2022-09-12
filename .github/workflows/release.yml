@@ -12,7 +12,21 @@ on:
 # For more information see: https://help.github.com/actions/language-and-framework-guides/publishing-nodejs-packages
 
 jobs:
-  build-and-publish:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: yarn
+      - run: yarn prepare
+      - run: yarn build
+      - run: cp logo.svg deno/lib
+      - run: cp README.md deno/lib
+
+  publish-npm:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,20 +34,7 @@ jobs:
         with:
           node-version: 16
           registry-url: https://registry.npmjs.org/
-
-      - name: Install dependencies
-      - run: |
-          yarn install
-
-      - name: Build
-      - run: |
-          yarn clean
-          yarn build
-          cp logo.svg deno/lib
-          cp README.md deno/lib
-
-      - name: Publish to NPM
+      - run: yarn
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-
