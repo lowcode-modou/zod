@@ -19,14 +19,19 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run: yarn
-      - run: yarn prepare
-      - run: yarn build
 
-  publish-npm:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
+      - name: Install dependencies
+      - run: |
+          yarn install
+
+      - name: Build
+      - run: |
+          yarn clean
+          yarn build
+          cp logo.svg deno/lib
+          cp README.md deno/lib
+
+        name: Publish to NPM
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
@@ -35,3 +40,4 @@ jobs:
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+
