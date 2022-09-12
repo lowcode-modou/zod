@@ -436,7 +436,7 @@ export abstract class ZodType<
     });
   }
 
-  _describeMap(record: Record<`${string}-${string}`, any>): this {
+  _describeMap(record: Record<`x-${string}`, any>): this {
     const This = (this as any).constructor;
     return new This({
       ...this._def,
