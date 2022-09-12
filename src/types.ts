@@ -369,6 +369,7 @@ export abstract class ZodType<
     this.transform = this.transform.bind(this);
     this.default = this.default.bind(this);
     this.describe = this.describe.bind(this);
+    this._describeMap = this._describeMap.bind(this);
     this.isNullable = this.isNullable.bind(this);
     this.isOptional = this.isOptional.bind(this);
   }
@@ -432,6 +433,14 @@ export abstract class ZodType<
     return new This({
       ...this._def,
       description,
+    });
+  }
+
+  _describeMap(record: Record<`${string}-${string}`, any>): this {
+    const This = (this as any).constructor;
+    return new This({
+      ...this._def,
+      ...record,
     });
   }
 
