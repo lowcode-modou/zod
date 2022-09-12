@@ -8,33 +8,111 @@ on:
     paths:
       - package.json
 
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://help.github.com/actions/language-and-framework-guides/publishing-nodejs-packages
-
 jobs:
-  build:
+  build_and_publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
         with:
-          node-version: 16
-      - run: yarn
-      - run: yarn prepare
-      - run: yarn build
-      - run: cp logo.svg deno/lib
-      - run: cp README.md deno/lib
+          fetch-depth: 0
+          submodules: true
 
-  publish-npm:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Set up Node
+        uses: actions/setup-node@v1
         with:
           node-version: 16
-          registry-url: https://registry.npmjs.org/
-      - run: yarn
-      - run: npm publish --access public
+
+      - name: Checkout zod-deno
+        uses: actions/checkout@v3
+        with:
+          path: deno/lib
+
+      - name: Install dependencies
+        run: |
+          yarn install
+
+      - name: Build
+        run: |
+          yarn clean
+          yarn build
+          cp logo.svg deno/lib
+          cp README.md deno/lib
+
+      - id: publish
+        name: Publish to NPM
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          dry-run: false
+          access: public
+
+      - name: Post-publish
+        if: steps.publish.outputs.type != 'none'
+        run: |
+          echo "Published ${{ steps.publish.outputs.type }} version: ${{ steps.publish.outputs.version }}"
+
+      - name: Publish skipped
+        if: steps.publish.outputs.type == 'none'
+        run: |
+          echo "Version in package.json has not changed. Skipping."
+          exit 0
+
+      - name: Push to Deno
+        if: steps.publish.outputs.type != 'none'
+        working-directory: deno/lib
+        run: |
+          git config --global user.email "liuleiytu@gmail.com"
+          git config --global user.name "Zod Bot"
+          git add . -f
+          git commit -m "Build from zod $GITHUB_SHA" --allow-empty
+          git push
+
+      - name: Configure changelog
+        if: steps.publish.outputs.type != 'none'
+        run: |
+          echo '{"categories": [], "template": "## Commits:\n\n${{ '${{UNCATEGORIZED}}' }}", "pr_template": ${{ '"- ${{MERGE_SHA}} ${{TITLE}}"' }} }' > changelog_config.json
+          cat changelog_config.json
+          echo "last_tag=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+          echo "curr_commit=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Generate changelog
+        if: steps.publish.outputs.type != 'none'
+        id: github_release
+        uses: mikepenz/release-changelog-builder-action@v2.9.0
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          fromTag: "${{ env.last_tag }}"
+          toTag: ${{ github.ref }}
+          commitMode: true
+          configuration: changelog_config.json
+
+      - name: Create release
+        if: steps.publish.outputs.type != 'none'
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.publish.outputs.version }}
+          release_name: v${{ steps.publish.outputs.version }}
+          commitish: ${{ github.ref }}
+          body: ${{steps.github_release.outputs.changelog}}
+          draft: false
+          prerelease: false
+
+      - name: Create Deno release
+        if: steps.publish.outputs.type != 'none'
+        id: create_deno_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.ZOD_BOT_TOKEN }}
+        with:
+          tag_name: v${{ steps.publish.outputs.version }}
+          release_name: v${{ steps.publish.outputs.version }}
+          commitish: refs/heads/main
+          body: ${{steps.github_release.outputs.changelog}}
+          draft: false
+          prerelease: false
+          owner: ll929
+          repo: zod-deno
